@@ -37,6 +37,7 @@ func gtkBool(input bool) C.gboolean {
 type Window struct {
 	appoptions                               *options.App
 	debug                                    bool
+	devtools                                 bool
 	gtkWindow                                unsafe.Pointer
 	contentManager                           unsafe.Pointer
 	webview                                  unsafe.Pointer
@@ -54,12 +55,13 @@ func bool2Cint(value bool) C.int {
 	return C.int(0)
 }
 
-func NewWindow(appoptions *options.App, debug bool) *Window {
+func NewWindow(appoptions *options.App, debug bool, devtools bool) *Window {
 	validateWebKit2Version(appoptions)
 
 	result := &Window{
 		appoptions: appoptions,
 		debug:      debug,
+		devtools:   devtools,
 		minHeight:  appoptions.MinHeight,
 		minWidth:   appoptions.MinWidth,
 		maxHeight:  appoptions.MaxHeight,
@@ -95,9 +97,9 @@ func NewWindow(appoptions *options.App, debug bool) *Window {
 	defer C.free(unsafe.Pointer(buttonPressedName))
 	C.ConnectButtons(unsafe.Pointer(webview))
 
-	if debug {
-		C.DevtoolsEnabled(unsafe.Pointer(webview), C.int(1), C.bool(appoptions.Debug.OpenInspectorOnStartup))
-	} else {
+	if devtools {
+		C.DevtoolsEnabled(unsafe.Pointer(webview), C.int(1), C.bool(debug && appoptions.Debug.OpenInspectorOnStartup))
+	} else if !appoptions.EnableDefaultContextMenu {
 		C.DisableContextMenu(unsafe.Pointer(webview))
 	}
 
@@ -171,7 +173,9 @@ func (w *Window) Center() {
 }
 
 func (w *Window) SetPosition(x int, y int) {
-	C.SetPosition(unsafe.Pointer(w.asGTKWindow()), C.int(x), C.int(y))
+	invokeOnMainThread(func() {
+		C.SetPosition(unsafe.Pointer(w.asGTKWindow()), C.int(x), C.int(y))
+	})
 }
 
 func (w *Window) Size() (int, int) {
@@ -267,6 +271,7 @@ func (w *Window) SetBackgroundColour(r uint8, g uint8, b uint8, a uint8) {
 		b:       C.uchar(b),
 		a:       C.uchar(a),
 		webview: w.webview,
+		window:  w.gtkWindow,
 	}
 	invokeOnMainThread(func() { C.SetBackgroundColour(unsafe.Pointer(&data)) })
 
@@ -287,6 +292,9 @@ func (w *Window) Run(url string) {
 	_url := C.CString(url)
 	C.LoadIndex(w.webview, _url)
 	defer C.free(unsafe.Pointer(_url))
+	if w.appoptions.StartHidden {
+		w.Hide()
+	}
 	C.gtk_widget_show_all(w.asGTKWidget())
 	w.Center()
 	switch w.appoptions.WindowStartState {
@@ -297,7 +305,6 @@ func (w *Window) Run(url string) {
 	case options.Maximised:
 		w.Maximise()
 	}
-
 }
 
 func (w *Window) SetKeepAbove(top bool) {

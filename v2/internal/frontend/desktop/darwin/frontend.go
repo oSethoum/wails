@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"net"
 	"net/url"
-	"strconv"
 	"unsafe"
 
 	"github.com/wailsapp/wails/v2/pkg/assetserver"
@@ -47,6 +47,7 @@ type Frontend struct {
 	frontendOptions *options.App
 	logger          *logger.Logger
 	debug           bool
+	devtools        bool
 
 	// Assets
 	assets   *assetserver.AssetServer
@@ -79,6 +80,10 @@ func NewFrontend(ctx context.Context, appoptions *options.App, myLogger *logger.
 	if _starturl, _ := ctx.Value("starturl").(*url.URL); _starturl != nil {
 		result.startURL = _starturl
 	} else {
+		if port, _ := ctx.Value("assetserverport").(string); port != "" {
+			result.startURL.Host = net.JoinHostPort(result.startURL.Host+".localhost", port)
+		}
+
 		var bindings string
 		var err error
 		if _obfuscated, _ := ctx.Value("obfuscated").(bool); !_obfuscated {
@@ -114,7 +119,6 @@ func (f *Frontend) startMessageProcessor() {
 func (f *Frontend) startRequestProcessor() {
 	for request := range requestBuffer {
 		f.assets.ServeWebViewRequest(request)
-		request.Release()
 	}
 }
 func (f *Frontend) startCallbackProcessor() {
@@ -148,12 +152,18 @@ func (f *Frontend) WindowSetDarkTheme() {
 
 func (f *Frontend) Run(ctx context.Context) error {
 	f.ctx = ctx
+
 	var _debug = ctx.Value("debug")
+	var _devtools = ctx.Value("devtools")
+
 	if _debug != nil {
 		f.debug = _debug.(bool)
 	}
+	if _devtools != nil {
+		f.devtools = _devtools.(bool)
+	}
 
-	mainWindow := NewWindow(f.frontendOptions, f.debug)
+	mainWindow := NewWindow(f.frontendOptions, f.debug, f.devtools)
 	f.mainWindow = mainWindow
 	f.mainWindow.Center()
 
@@ -337,7 +347,11 @@ func (f *Frontend) processMessage(message string) {
 }
 
 func (f *Frontend) Callback(message string) {
-	f.ExecJS(`window.wails.Callback(` + strconv.Quote(message) + `);`)
+	escaped, err := json.Marshal(message)
+	if err != nil {
+		panic(err)
+	}
+	f.ExecJS(`window.wails.Callback(` + string(escaped) + `);`)
 }
 
 func (f *Frontend) ExecJS(js string) {

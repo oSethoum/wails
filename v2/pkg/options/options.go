@@ -64,11 +64,18 @@ type App struct {
 	Bind               []interface{}
 	WindowStartState   WindowStartState
 
+	// ErrorFormatter overrides the formatting of errors returned by backend methods
+	ErrorFormatter ErrorFormatter
+
 	// CSS property to test for draggable elements. Default "--wails-draggable"
 	CSSDragProperty string
 
 	// The CSS Value that the CSSDragProperty must have to be draggable, EG: "drag"
 	CSSDragValue string
+
+	// EnableDefaultContextMenu enables the browser's default context-menu in production
+	// This menu is already enabled in development, as well as in debug builds and production builds with the `-devtools` flag
+	EnableDefaultContextMenu bool
 
 	// EnableFraudulentWebsiteDetection enables scan services for fraudulent content, such as malware or phishing attempts.
 	// These services might send information from your app like URLs navigated to and possibly other content to cloud
@@ -85,6 +92,8 @@ type App struct {
 	// Debug options for debug builds. These options will be ignored in a production build.
 	Debug Debug
 }
+
+type ErrorFormatter func(error) any
 
 type RGBA struct {
 	R uint8 `json:"r"`
@@ -160,10 +169,14 @@ func processMenus(appoptions *App) {
 	switch runtime.GOOS {
 	case "darwin":
 		if appoptions.Menu == nil {
-			appoptions.Menu = menu.NewMenuFromItems(
-				menu.AppMenu(),
+			items := []*menu.MenuItem{
 				menu.EditMenu(),
-			)
+			}
+			if !appoptions.Frameless {
+				items = append(items, menu.WindowMenu()) // Current options in Window Menu only work if not frameless
+			}
+
+			appoptions.Menu = menu.NewMenuFromItems(menu.AppMenu(), items...)
 		}
 	}
 }

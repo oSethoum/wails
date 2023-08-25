@@ -22,6 +22,7 @@ type assetServerWebView struct {
 
 // ServeWebViewRequest processes the HTTP Request asynchronously by faking a golang HTTP Server.
 // The request will be finished with a StatusNotImplemented code if no handler has written to the response.
+// The AssetServer takes ownership of the request and the caller mustn't close it or access it in any other way.
 func (d *AssetServer) ServeWebViewRequest(req webview.Request) {
 	d.dispatchInit.Do(func() {
 		workers := d.dispatchWorkers
@@ -33,8 +34,11 @@ func (d *AssetServer) ServeWebViewRequest(req webview.Request) {
 		for i := 0; i < workers; i++ {
 			go func() {
 				for req := range workerC {
+					uri, _ := req.URL()
 					d.processWebViewRequest(req)
-					req.Release()
+					if err := req.Close(); err != nil {
+						d.logError("Unable to call close for request for uri '%s'", uri)
+					}
 				}
 			}()
 		}
@@ -44,12 +48,6 @@ func (d *AssetServer) ServeWebViewRequest(req webview.Request) {
 
 		d.dispatchReqC = dispatchC
 	})
-
-	if err := req.AddRef(); err != nil {
-		uri, _ := req.URL()
-		d.logError("Unable to call AddRef for request '%s'", uri)
-		return
-	}
 
 	d.dispatchReqC <- req
 }
@@ -98,15 +96,23 @@ func (d *AssetServer) processWebViewRequest(r webview.Request) {
 		d.webviewRequestErrorHandler(uri, rw, fmt.Errorf("HTTP-Request: %w", err))
 		return
 	}
+
+	// For server requests, the URL is parsed from the URI supplied on the Request-Line as stored in RequestURI. For
+	// most requests, fields other than Path and RawQuery will be empty. (See RFC 7230, Section 5.3)
+	req.URL.Scheme = ""
+	req.URL.Host = ""
+	req.URL.Fragment = ""
+	req.URL.RawFragment = ""
+
+	if url := req.URL; req.RequestURI == "" && url != nil {
+		req.RequestURI = url.String()
+	}
+
 	req.Header = header
 
 	if req.RemoteAddr == "" {
 		// 192.0.2.0/24 is "TEST-NET" in RFC 5737
 		req.RemoteAddr = "192.0.2.1:1234"
-	}
-
-	if req.RequestURI == "" && req.URL != nil {
-		req.RequestURI = req.URL.String()
 	}
 
 	if req.ContentLength == 0 {

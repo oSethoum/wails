@@ -40,6 +40,7 @@ type Options struct {
 	Logger            *clilogger.CLILogger // All output to the logger
 	OutputType        string               // EG: desktop, server....
 	Mode              Mode                 // release or dev
+	Devtools          bool                 // Enable devtools in production
 	ProjectData       *project.Project     // The project data
 	Pack              bool                 // Create a package for the app after building
 	Platform          string               // The platform to build for
@@ -207,7 +208,7 @@ func printBulletPoint(text string, args ...any) {
 		fatal(err.Error())
 	}
 	t = strings.Trim(t, "\n\r")
-	pterm.Printf(t, args...)
+	pterm.Printfln(t, args...)
 }
 
 func GenerateBindings(buildOptions *Options) error {

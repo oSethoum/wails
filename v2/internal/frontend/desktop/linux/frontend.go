@@ -78,16 +78,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
+	"net"
 	"net/url"
 	"os"
 	"runtime"
-	"strconv"
 	"strings"
 	"text/template"
 	"unsafe"
 
 	"github.com/wailsapp/wails/v2/pkg/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/assetserver/webview"
 
 	"github.com/wailsapp/wails/v2/internal/binding"
 	"github.com/wailsapp/wails/v2/internal/frontend"
@@ -106,6 +106,7 @@ type Frontend struct {
 	frontendOptions *options.App
 	logger          *logger.Logger
 	debug           bool
+	devtools        bool
 
 	// Assets
 	assets   *assetserver.AssetServer
@@ -150,6 +151,10 @@ func NewFrontend(ctx context.Context, appoptions *options.App, myLogger *logger.
 	if _starturl, _ := ctx.Value("starturl").(*url.URL); _starturl != nil {
 		result.startURL = _starturl
 	} else {
+		if port, _ := ctx.Value("assetserverport").(string); port != "" {
+			result.startURL.Host = net.JoinHostPort(result.startURL.Host+".localhost", port)
+		}
+
 		var bindings string
 		var err error
 		if _obfuscated, _ := ctx.Value("obfuscated").(bool); !_obfuscated {
@@ -166,21 +171,30 @@ func NewFrontend(ctx context.Context, appoptions *options.App, myLogger *logger.
 		}
 		result.assets = assets
 
-		// Start 10 processors to handle requests in parallel
-		for i := 0; i < 10; i++ {
-			go result.startRequestProcessor()
-		}
+		go result.startRequestProcessor()
 	}
 
 	go result.startMessageProcessor()
 
 	var _debug = ctx.Value("debug")
+	var _devtools = ctx.Value("devtools")
+
 	if _debug != nil {
 		result.debug = _debug.(bool)
 	}
-	result.mainWindow = NewWindow(appoptions, result.debug)
+	if _devtools != nil {
+		result.devtools = _devtools.(bool)
+	}
+
+	result.mainWindow = NewWindow(appoptions, result.debug, result.devtools)
 
 	C.install_signal_handlers()
+
+	if appoptions.Linux != nil && appoptions.Linux.ProgramName != "" {
+		prgname := C.CString(appoptions.Linux.ProgramName)
+		C.g_set_prgname(prgname)
+		C.free(unsafe.Pointer(prgname))
+	}
 
 	return result
 }
@@ -437,7 +451,11 @@ func (f *Frontend) processMessage(message string) {
 }
 
 func (f *Frontend) Callback(message string) {
-	f.ExecJS(`window.wails.Callback(` + strconv.Quote(message) + `);`)
+	escaped, err := json.Marshal(message)
+	if err != nil {
+		panic(err)
+	}
+	f.ExecJS(`window.wails.Callback(` + string(escaped) + `);`)
 }
 
 func (f *Frontend) startDrag() {
@@ -461,50 +479,15 @@ func processMessage(message *C.char) {
 	messageBuffer <- goMessage
 }
 
-var requestBuffer = make(chan unsafe.Pointer, 100)
+var requestBuffer = make(chan webview.Request, 100)
 
 func (f *Frontend) startRequestProcessor() {
 	for request := range requestBuffer {
-		f.processRequest(request)
-		C.g_object_unref(C.gpointer(request))
+		f.assets.ServeWebViewRequest(request)
 	}
 }
 
 //export processURLRequest
 func processURLRequest(request unsafe.Pointer) {
-	// Increment reference counter to allow async processing, will be decremented after the processing
-	// has been finished by a worker.
-	C.g_object_ref(C.gpointer(request))
-	requestBuffer <- request
-}
-
-func (f *Frontend) processRequest(request unsafe.Pointer) {
-	req := (*C.WebKitURISchemeRequest)(request)
-	uri := C.webkit_uri_scheme_request_get_uri(req)
-	goURI := C.GoString(uri)
-
-	rw := &webKitResponseWriter{req: req}
-	defer rw.Close()
-
-	f.assets.ProcessHTTPRequestLegacy(
-		rw,
-		func() (*http.Request, error) {
-			method := webkit_uri_scheme_request_get_http_method(req)
-			r, err := http.NewRequest(method, goURI, nil)
-			if err != nil {
-				return nil, err
-			}
-			r.Header = webkit_uri_scheme_request_get_http_headers(req)
-
-			if r.URL.Host != f.startURL.Host {
-				if r.Body != nil {
-					r.Body.Close()
-				}
-
-				return nil, fmt.Errorf("Expected host '%s' in request, but was '%s'", f.startURL.Host, r.URL.Host)
-			}
-
-			return r, nil
-		})
-
+	requestBuffer <- webview.NewRequest(request)
 }
