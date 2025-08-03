@@ -93,9 +93,11 @@ func (w *windowsMenu) processMenu(parentMenu w32.HMENU, inputMenu *Menu) {
 			continue
 		}
 
-		w32.AppendMenu(parentMenu, flags, uintptr(itemID), menuText)
+		w32.AppendMenu(parentMenu, flags, uintptr(itemID), menuText) 
 		if item.bitmap != nil {
-			w32.SetMenuIcons(parentMenu, itemID, item.bitmap, nil)
+			if err := w32.SetMenuIcons(parentMenu, itemID, item.bitmap, nil); err != nil {
+				globalApplication.fatal("error setting menu icons: %w", err)
+			}
 		}
 	}
 }
