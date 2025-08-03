@@ -81,10 +81,27 @@ type Window interface {
 	UnMaximise()
 	UnMinimise()
 	Width() int
+	IsVisible() bool
+	Bounds() Rect
+	SetBounds(bounds Rect)
 	Zoom()
 	ZoomIn()
 	ZoomOut()
 	ZoomReset() Window
 	SetMenu(menu *Menu)
 	SnapAssist()
+	NativeWindow() NativeWindow
+	SetEnabled(enabled bool)
+	Flash(enabled bool)
+	Print() error
+	RegisterHook(eventType events.WindowEventType, callback func(event *WindowEvent)) func()
+
+	// Editing methods
+	cut()
+	copy()
+	paste()
+	undo()
+	redo()
+	delete()
+	selectAll()
 }

@@ -5,6 +5,7 @@ package badge
 import (
 	"bytes"
 	"context"
+	"errors"
 	"image"
 	"image/color"
 	"image/png"
@@ -86,10 +87,11 @@ func (w *windowsBadge) SetBadge(label string) error {
 		return nil
 	}
 
-	hwnd, err := window.NativeWindowHandle()
-	if err != nil {
-		return err
+	nativeWindow := window.NativeWindow()
+	if nativeWindow == nil {
+		return errors.New("window native handle unavailable")
 	}
+	hwnd := uintptr(nativeWindow)
 
 	w.createBadge()
 
@@ -126,10 +128,11 @@ func (w *windowsBadge) SetCustomBadge(label string, options Options) error {
 		return nil
 	}
 
-	hwnd, err := window.NativeWindowHandle()
-	if err != nil {
-		return err
+	nativeWindow := window.NativeWindow()
+	if nativeWindow == nil {
+		return errors.New("window native handle unavailable")
 	}
+	hwnd := uintptr(nativeWindow)
 
 	const badgeSize = 32
 
@@ -183,10 +186,11 @@ func (w *windowsBadge) RemoveBadge() error {
 		return nil
 	}
 
-	hwnd, err := window.NativeWindowHandle()
-	if err != nil {
-		return err
+	nativeWindow := window.NativeWindow()
+	if nativeWindow == nil {
+		return errors.New("window native handle unavailable")
 	}
+	hwnd := uintptr(nativeWindow)
 
 	return w.taskbar.SetOverlayIcon(hwnd, 0, nil)
 }

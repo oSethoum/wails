@@ -1278,7 +1278,11 @@ func emit(we *C.WindowEvent) {
 func handleConfigureEvent(widget *C.GtkWidget, event *C.GdkEventConfigure, data C.uintptr_t) C.gboolean {
 	window, _ := globalApplication.Window.GetByID(uint(data))
 	if window != nil {
-		lw, ok := window.(*WebviewWindow).impl.(*linuxWebviewWindow)
+		webviewWindow, ok := window.(*WebviewWindow)
+		if !ok {
+			return C.gboolean(1)
+		}
+		lw, ok := webviewWindow.impl.(*linuxWebviewWindow)
 		if !ok {
 			return C.gboolean(1)
 		}
@@ -1461,7 +1465,11 @@ func onButtonEvent(_ *C.GtkWidget, event *C.GdkEventButton, data C.uintptr_t) C.
 	if window == nil {
 		return C.gboolean(0)
 	}
-	lw, ok := (window.(*WebviewWindow).impl).(*linuxWebviewWindow)
+	webviewWindow, ok := window.(*WebviewWindow)
+	if !ok {
+		return C.gboolean(0)
+	}
+	lw, ok := webviewWindow.impl.(*linuxWebviewWindow)
 	if !ok {
 		return C.gboolean(0)
 	}
@@ -1498,7 +1506,11 @@ func onMenuButtonEvent(_ *C.GtkWidget, event *C.GdkEventButton, data C.uintptr_t
 	if window == nil {
 		return C.gboolean(0)
 	}
-	lw, ok := (window.(*WebviewWindow).impl).(*linuxWebviewWindow)
+	webviewWindow, ok := window.(*WebviewWindow)
+	if !ok {
+		return C.gboolean(0)
+	}
+	lw, ok := webviewWindow.impl.(*linuxWebviewWindow)
 	if !ok {
 		return C.gboolean(0)
 	}

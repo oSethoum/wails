@@ -32,7 +32,7 @@ func main() {
 
 	currentWindow := func(fn func(window *application.WebviewWindow)) {
 		if app.Window.Current() != nil {
-			fn(app.Window.Current())
+			fn(app.Window.Current().(*application.WebviewWindow))
 		} else {
 			println("Current WebviewWindow is nil")
 		}

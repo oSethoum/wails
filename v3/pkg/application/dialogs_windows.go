@@ -38,11 +38,10 @@ func (m *windowsDialog) show() {
 	var button int32
 
 	var parentWindow uintptr
-	var err error
 	if m.dialog.window != nil {
-		parentWindow, err = m.dialog.window.NativeWindowHandle()
-		if err != nil {
-			globalApplication.handleFatalError(err)
+		nativeWindow := m.dialog.window.NativeWindow()
+		if nativeWindow != nil {
+			parentWindow = uintptr(nativeWindow)
 		}
 	}
 
@@ -112,9 +111,9 @@ func (m *windowOpenFileDialog) show() (chan string, error) {
 	}
 
 	if m.dialog.window != nil {
-		config.ParentWindowHandle, err = m.dialog.window.NativeWindowHandle()
-		if err != nil {
-			globalApplication.handleFatalError(err)
+		nativeWindow := m.dialog.window.NativeWindow()
+		if nativeWindow != nil {
+			config.ParentWindowHandle = uintptr(nativeWindow)
 		}
 	}
 

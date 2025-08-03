@@ -28,12 +28,12 @@ func main() {
 
 	editMenu := menu.AddSubmenu("MenuBar")
 	editMenu.Add("Hide MenuBar").OnClick(func(ctx *application.Context) {
-		app.Window.Current().HideMenuBar()
+		app.Window.Current().(*application.WebviewWindow).HideMenuBar()
 	})
 
 	helpMenu := menu.AddSubmenu("Help")
 	helpMenu.Add("About").OnClick(func(ctx *application.Context) {
-		app.Window.Current().SetURL("/about.html")
+		app.Window.Current().(*application.WebviewWindow).SetURL("/about.html")
 	})
 
 	// Create window with menu
@@ -44,14 +44,14 @@ func main() {
 		Windows: application.WindowsWindow{
 			Menu: menu,
 		},
-		KeyBindings: map[string]func(window *application.WebviewWindow){
-			"F1": func(window *application.WebviewWindow) {
+		KeyBindings: map[string]func(window application.Window){
+			"F1": func(window application.Window) {
 				window.ToggleMenuBar()
 			},
-			"F2": func(window *application.WebviewWindow) {
+			"F2": func(window application.Window) {
 				window.ShowMenuBar()
 			},
-			"F3": func(window *application.WebviewWindow) {
+			"F3": func(window application.Window) {
 				window.HideMenuBar()
 			},
 		},
