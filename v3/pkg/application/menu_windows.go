@@ -80,7 +80,7 @@ func (w *windowsMenu) processMenu(parentMenu w32.HMENU, inputMenu *Menu) {
 			if w.parentWindow != nil {
 				w.parentWindow.parent.addMenuBinding(item.accelerator, item)
 			} else {
-				globalApplication.KeyBinding.Add(item.accelerator.String(), func(w *WebviewWindow) {
+				globalApplication.KeyBinding.Add(item.accelerator.String(), func(w Window) {
 					item.handleClick()
 				})
 			}

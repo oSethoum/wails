@@ -1101,11 +1101,9 @@ func runOpenFileDialog(dialog *OpenFileDialogStruct) ([]string, error) {
 
 	window := pointer(0)
 	if dialog.window != nil {
-		webviewWindow, ok := dialog.window.(*WebviewWindow)
-		if ok {
-			if lw, ok := webviewWindow.impl.(*linuxWebviewWindow); ok {
-				window = lw.window
-			}
+		nativeWindow := dialog.window.NativeWindow()
+		if nativeWindow != nil {
+			window = pointer(uintptr(nativeWindow))
 		}
 	}
 

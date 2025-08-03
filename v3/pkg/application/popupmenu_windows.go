@@ -126,7 +126,7 @@ func (p *Win32Menu) buildMenu(parentMenu w32.HMENU, inputMenu *Menu) {
 				if p.parentWindow != nil {
 					p.parentWindow.parent.addMenuBinding(item.accelerator, item)
 				} else {
-					globalApplication.KeyBinding.Add(item.accelerator.String(), func(w *WebviewWindow) {
+					globalApplication.KeyBinding.Add(item.accelerator.String(), func(w Window) {
 						item.handleClick()
 					})
 				}

@@ -1765,7 +1765,10 @@ func runOpenFileDialog(dialog *OpenFileDialogStruct) (chan string, error) {
 
 	window := nilPointer
 	if dialog.window != nil {
-		window = (dialog.window.impl).(*linuxWebviewWindow).window
+		nativeWindow := dialog.window.NativeWindow()
+		if nativeWindow != nil {
+			window = nativeWindow
+		}
 	}
 
 	buttonText := dialog.buttonText
