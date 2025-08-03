@@ -96,6 +96,7 @@ func (w *windowsBadge) SetBadge(label string) error {
 	w.createBadge()
 
 	var hicon w32.HICON
+	var err error
 	if label == "" {
 		hicon, err = w.createBadgeIcon()
 		if err != nil {
@@ -154,6 +155,7 @@ func (w *windowsBadge) SetCustomBadge(label string, options Options) error {
 	}
 
 	var hicon w32.HICON
+	var err error
 	if label == "" {
 		hicon, err = createBadgeIcon(badgeSize, img, options)
 		if err != nil {
