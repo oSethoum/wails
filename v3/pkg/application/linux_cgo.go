@@ -1767,7 +1767,7 @@ func runOpenFileDialog(dialog *OpenFileDialogStruct) (chan string, error) {
 	if dialog.window != nil {
 		nativeWindow := dialog.window.NativeWindow()
 		if nativeWindow != nil {
-			window = nativeWindow
+			window = pointer(nativeWindow)
 		}
 	}
 
