@@ -11,6 +11,7 @@ import (
 	"github.com/wailsapp/wails/v3/internal/capabilities"
 	"github.com/wailsapp/wails/v3/internal/runtime"
 	"github.com/wailsapp/wails/v3/pkg/events"
+	"unsafe"
 )
 
 type dragInfo struct {
