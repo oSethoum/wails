@@ -8,6 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"text/template"
+	"unsafe"
 
 	"github.com/leaanthony/u"
 
@@ -77,7 +78,7 @@ type (
 		getScreen() (*Screen, error)
 		setFrameless(bool)
 		openContextMenu(menu *Menu, data *ContextMenuData)
-		nativeWindow() NativeWindow
+		nativeWindow() unsafe.Pointer
 		startDrag() error
 		startResize(border string) error
 		print() error
@@ -1242,7 +1243,7 @@ func (w *WebviewWindow) OpenContextMenu(data *ContextMenuData) {
 }
 
 // NativeWindow returns the platform-specific native window handle
-func (w *WebviewWindow) NativeWindow() NativeWindow {
+func (w *WebviewWindow) NativeWindow() unsafe.Pointer {
 	if w.impl == nil || w.isDestroyed() {
 		return nil
 	}

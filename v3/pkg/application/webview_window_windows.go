@@ -234,7 +234,7 @@ func (w *windowsWebviewWindow) startDrag() error {
 	return nil
 }
 
-func (w *windowsWebviewWindow) nativeWindow() NativeWindow {
+func (w *windowsWebviewWindow) nativeWindow() unsafe.Pointer {
 	return unsafe.Pointer(w.hwnd)
 }
 

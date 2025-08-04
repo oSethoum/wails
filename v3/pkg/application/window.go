@@ -1,6 +1,8 @@
 package application
 
 import (
+	"unsafe"
+	
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
@@ -90,7 +92,7 @@ type Window interface {
 	ZoomReset() Window
 	SetMenu(menu *Menu)
 	SnapAssist()
-	NativeWindow() NativeWindow
+	NativeWindow() unsafe.Pointer
 	SetEnabled(enabled bool)
 	Flash(enabled bool)
 	Print() error

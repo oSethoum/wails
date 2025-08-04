@@ -376,8 +376,8 @@ func (w *linuxWebviewWindow) startResize(border string) error {
 	return nil
 }
 
-func (w *linuxWebviewWindow) nativeWindow() NativeWindow {
-	return NativeWindow(w.window)
+func (w *linuxWebviewWindow) nativeWindow() unsafe.Pointer {
+	return unsafe.Pointer(w.window)
 }
 
 func (w *linuxWebviewWindow) print() error {

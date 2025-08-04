@@ -1326,7 +1326,7 @@ func (w *macosWebviewWindow) run() {
 	})
 }
 
-func (w *macosWebviewWindow) nativeWindow() NativeWindow {
+func (w *macosWebviewWindow) nativeWindow() unsafe.Pointer {
 	return w.nsWindow
 }
 
