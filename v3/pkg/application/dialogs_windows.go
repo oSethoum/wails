@@ -189,9 +189,16 @@ func (m *windowSaveFileDialog) show() (chan string, error) {
 		func() (cfd.Dialog, error) {
 			return cfd.NewSaveFileDialog(config)
 		}, false, m.dialog.window)
+	if err != nil {
+		close(files)
+		return files, err
+	}
 	go func() {
 		defer handlePanic()
-		files <- result.(string)
+		f, ok := result.(string)
+		if ok {
+			files <- f
+		}
 		close(files)
 	}()
 	return files, err
